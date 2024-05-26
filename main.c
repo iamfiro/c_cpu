@@ -15,6 +15,7 @@ int main() {
         MOV, R3, R2,
         SUB, R3, R1,
         DIV, R3, R0,
+        JMP, 0,
         HLT
     };
 

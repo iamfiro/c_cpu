@@ -5,11 +5,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <unistd.h>
 
 #include "types.h"
 #include "instructions.h"
 
+// 메모리 크기
 #define MEMORY_SIZE 256
+
+// 클럭 사이클의 지연 시간  (단위: 마이크로초)
+#define CLOCK_PERIOD 1
 
 typedef struct {
     i8 ZF:1; // 제로 플래그
@@ -50,10 +55,19 @@ CPU new_cpu(uint8_t *memory, uint8_t memory_size) {
     return cpu;
 };
 
+int clockIndex = 0;
+
+void clockCycle(CPU *cpu) {
+    printf("[info] Clock %d\n", ++clockIndex);
+    sleep(CLOCK_PERIOD);
+}
+
 void run_cpu(CPU *c) {
+    printf("[info] CPU 실행됨\n");
     while (c->IR != HLT) {
         fetchCycle(c);
         ALU(c);
+        clockCycle(c);
     }
 }
 
