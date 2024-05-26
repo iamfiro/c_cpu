@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
+
 #include "types.h"
 #include "instructions.h"
 
@@ -36,15 +38,15 @@ typedef struct {
     i8 reg[8];
 } CPU;
 
-void fetchCycle(CPU *c);
 void ALU(CPU *c);
 void increment_pc(CPU *c, int value);
+void fetchCycle(CPU *c);
 
 CPU new_cpu(uint8_t *memory, uint8_t memory_size) {
     CPU cpu = {0};
-    
+
     memcpy(cpu.mem, memory, memory_size);
-    
+
     return cpu;
 };
 
@@ -74,8 +76,7 @@ void set_flags(CPU *cpu, i32 result, i32 operand1, i32 operand2, i8 operation) {
             if(result / operand1 != operand2) cpu->flags.CF = 1;
             break;
         case DIV:
-            int quotient = operand1 / operand2;
-            if(quotient != 0) cpu->flags.CF = 1;
+            if(operand1 / operand2 != 0) cpu->flags.CF = 1;
     }
 
     // 오버플로우 플래그
@@ -133,14 +134,35 @@ void ALU(CPU *cpu) {
             break;
         };
         case DIV: {
-            set_flags(cpu, pc_value / pc_next_value, pc_value, pc_next_value, DIV);
-            
-            if(pc_next_value == 0) cpu->flags.ZF = 1;
-            pc_value /= pc_next_value;
+            if(pc_next_value == 0) {
+                printf("[ERROR] Division by zero\n");
+                increment_pc(cpu, 2);
+                break;
+            } else {
+                set_flags(cpu, pc_value / pc_next_value, pc_value, pc_next_value, DIV);
 
-            increment_pc(cpu, 2);
+                if(pc_next_value == 0) cpu->flags.ZF = 1;
+                pc_value /= pc_next_value;
+
+                increment_pc(cpu, 2);
+                break;
+            }
+        };
+        case JMP: {
+            printf("[info] JMP to %d\n", pc_value);
+            cpu->PC = pc_value;
             break;
-        }
+        };
+        case JZ: {
+            if(cpu->flags.ZF) cpu->PC = pc_value;
+            else increment_pc(cpu, 2);
+            break;
+        };
+        case JNZ: {
+            if(!cpu->flags.ZF) cpu->PC = pc_value;
+            else increment_pc(cpu, 2);
+            break;
+        };
     }
 }
 
